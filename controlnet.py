@@ -7,7 +7,7 @@ import torch.nn.functional as F
 class ZeroConv2d(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
-        self.conv = nn.Conv2d(in_channels, out_channels, kernel=1)
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=1)
         ## здесь нужно проинициализировать свертку нулями 
         self.conv.weight.data = nn.Parameter(torch.zeros_like(self.conv.weight.data))
         self.conv.bias.data = nn.Parameter(torch.zeros_like(self.conv.bias.data))
@@ -88,8 +88,8 @@ class ControlCUNet(nn.Module):
             tmp = class_labels
             emb = emb + self.cunet.map_label(tmp * np.sqrt(self.cunet.map_label.in_features))
 
-        emb = silu(self.cunet.map_layer0(emb))
-        z = silu(self.cunet.map_layer1(emb)).unsqueeze(-1).unsqueeze(-1)
+        emb = F.silu(self.cunet.map_layer0(emb))
+        z = F.silu(self.cunet.map_layer1(emb)).unsqueeze(-1).unsqueeze(-1)
 
         x1 = self.cunet.inc(x)
         x2 = self.cunet.down1(x1)
