@@ -4,6 +4,7 @@ import torch.nn.functional as F
 import functools
 from torch_utils import persistence, misc
 
+
 class DoubleConv(nn.Module):
     """(convolution => [BN] => ReLU) * 2"""
 
@@ -37,7 +38,6 @@ class Down(nn.Module):
     def forward(self, x):
         return self.maxpool_conv(x)
     
-
 
 class Up(nn.Module):
     """Upscaling then double conv"""

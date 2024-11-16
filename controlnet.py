@@ -1,8 +1,12 @@
+import numpy as np
+
 class ZeroConv2d(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
-        self.conv = Conv2d(in_channels, out_channels, kernel=1)
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel=1)
         ## здесь нужно проинициализировать свертку нулями 
+        self.conv.weight.data = nn.Parameter(torch.zeros_like(self.conv.weight.data))
+        self.conv.bias.data = nn.Parameter(torch.zeros_like(self.conv.bias.data))
 
     def forward(self, x):
         return self.conv(x)
@@ -17,17 +21,18 @@ class ControlCUNet(nn.Module):
         self.base_factor = cunet.base_factor
 
         factor = 2
-        self.zero0 = ...
-        self.inc = ...
-        self.zero_inc = ...
-        self.down1 = = ...
-        self.zero_down1 = ...
-        self.down2 = ...
-        self.zero_down2 = ...
-        self.down3 = ...
-        self.zero_down3 = ...
-        self.down4 = ...
-        self.zero_down4 = ...
+        self.inc = DoubleConv(self.in_channels, self.base_factor)
+        self.zero0 = ZeroConv2d(self.noise_channels, self.in_channels)
+        self.zero_inc = ZeroConv2d(self.base_factor, self.base_factor)
+        self.zero_down1 = ZeroConv2d(self.base_factor, self.base_factor)
+        self.zero_down2 = ZeroConv2d(factor * self.base_factor, factor * self.base_factor)
+        self.zero_down3 = ZeroConv2d(factor**2 * self.base_factor, factor**2 * self.base_factor)
+        self.zero_down4 = ZeroConv2d(factor**3 * self.base_factor, factor**3 * self.base_factor)
+        self.down1 = Down(self.base_factor, factor * self.base_factor)
+        self.down2 = Down(factor * self.base_factor, factor**2 * self.base_factor)
+        self.down3 = Down(factor**2 * self.base_factor, factor**3 * self.base_factor)
+        self.down4 = Down(factor ** 3 * self.base_factor, factor**3 * self.base_factor)
+
 
         # важно оставить такими же названия повторяющихся модулей, чтобы копирование сработало
         misc.copy_params_and_buffers(src_module=self.cunet, dst_module=self, require_all=False)
@@ -52,7 +57,20 @@ class ControlCUNet(nn.Module):
         x3 = self.cunet.down2(x2)
         x4 = self.cunet.down3(x3)
         x5 = self.cunet.down4(x4)
+        c0 = self.zero0(cond) + x
+        c1 = self.zero_inc(c0)
+        c2 = self.down1(c1)
+        c3 = self.down2(c2)
+        c4 = self.down3(c3)
+        c5 = self.down4(c4)
 
-        # your code here
-        out = ...
+        out = self.cunet.adain1(x5 + self.zero_down4(c5), z)
+        out = self.cunet.up1(out, x4 + self.zero_down3(c4))
+        out = self.cunet.adain2(out, z)
+        out = self.cunet.up2(out, x3 + self.zero_down2(c3))
+        out = self.cunet.adain3(out, z)
+        out = self.cunet.up3(out, x2 + self.zero_down1(c2))
+        out = self.cunet.adain4(out, z)
+        out = self.cunet.up4(out, x1 + self.zero_inc(c1))
+        out = self.cunet.outc(out)
         return out
