@@ -62,7 +62,7 @@ class ControlCUNet(nn.Module):
         factor = 2
         self.inc = DoubleConv(self.in_channels, self.base_factor)
         self.zero0 = ZeroConv2d(self.in_channels, self.in_channels)
-        self.zero_inc = ZeroConv2d(self.base_factor, self.base_factor)
+        self.zero_inc = ZeroConv2d(self.in_channels, self.base_factor)
         self.zero_down1 = ZeroConv2d(self.base_factor, self.base_factor)
         self.zero_down2 = ZeroConv2d(factor * self.base_factor, factor * self.base_factor)
         self.zero_down3 = ZeroConv2d(factor**2 * self.base_factor, factor**2 * self.base_factor)
